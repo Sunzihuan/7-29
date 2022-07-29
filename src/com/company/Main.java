@@ -1,6 +1,8 @@
 package com.company;
 
 import javax.swing.*;
+import javax.swing.plaf.ComponentUI;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
@@ -9,29 +11,92 @@ import java.awt.event.ItemListener;
 public class Main {
 
    public static void main(String[] args) {
-       Frame f=new Frame();//创建窗口
+       BFrame f=new BFrame();
+       f.setCalFinish(new IOnCalFinish() {
+        @Override
+        public void done(double value, BFrame owner) {
+            if(value==100)
+            {
+                   //JOptionPane.showConfirmDialog(null, "乘除法启动", "呵呵", JOptionPane.CLOSED_OPTION);
+                   owner.SwitchAction(new Ical() {
+                       @Override
+                       public double cal(String a, double b, double c) {
+                           double r = Ical.super.cal(a, b, c);
+                           if (r!=Double.MAX_VALUE)
+                               return r;
+                           switch (a) {
+                               case "*":
+                                   r = b * c;
+                                   break;
+                               case "/":
+                                   r = b / c;
+                                   break;
+                           }
+                           return r;
+                       }
+                   });
+            }   
+        }
+       });
+
    }
 }
-class Frame extends  JFrame
+interface Ical
 {
-   Frame()
+    default double cal(String a,double b,double c)
+    {
+        double r = Double.MAX_VALUE;
+        switch (a) {
+            case "+":
+                r = b+c;
+                break;
+            case "-":
+                r = b - c;
+                break;
+        }
+        return r;
+    }
+}
+interface IOnCalFinish
+{
+    void done(double value,BFrame owner);
+}
+class BFrame extends  JFrame
+{
+    
+    JButton button;
+    private Ical cIcal=new Ical() {
+        
+    };
+    void SwitchAction(Ical cIcal)
+    {
+        this.cIcal=cIcal;
+    }
+    IOnCalFinish calFinish=null;
+    public void setCalFinish(IOnCalFinish calFinish) {
+        this.calFinish = calFinish;
+    }
+    public IOnCalFinish getCalFinish() {
+        return calFinish;
+    }
+   BFrame()
    {
        JFrame frame=this;
-       frame.setTitle("加法计算器");//窗口名称
-       frame.setLocation(100,100);//窗口位置
-       frame.setSize(300,80);//窗口大小
-       frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//默认关闭操作
-       Container c=frame;//容器
-       c.setLayout(new FlowLayout());//设置布局
+       frame.setTitle("加法计算器");
+       frame.setLocation(100,100);
+       frame.setSize(300,80);
+       frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+       Container c=frame;
+       c.setLayout(new FlowLayout());
        //c.setBackground(Color.GREEN);
        JTextField a=new JTextField("1");
        JTextField b = new JTextField("1");
-       Dimension d=new Dimension();//尺寸
+       Dimension d=new Dimension();
        d.setSize(40,30);
        a.setPreferredSize(d);
        b.setPreferredSize(d);
-       Label label=new Label("答案");//标签
-       JComboBox f=new JComboBox();//下拉菜单
+       Label label=new Label("答案");
+       JComboBox f=new JComboBox();
        String text[]={"+","-","*","/"};
        for (String p:text
             ) {
@@ -43,29 +108,15 @@ class Frame extends  JFrame
        c.add(b);
 
 
-       JButton button=new JButton("=");
+        button=new JButton("=");
        button.addActionListener(new AbstractAction() {
            @Override
            public void actionPerformed(ActionEvent e) {
                try {
-                   Double r = null;
-                  switch (f.getSelectedItem().toString())
-                  {
-                      case "+":
-                         r= Double.valueOf(a.getText())+Double.valueOf(b.getText());
-                          break;
-                      case "-":
-                          r= Double.valueOf(a.getText())-Double.valueOf(b.getText());
-                          break;
-                      case "*":
-                          r= Double.valueOf(a.getText())*Double.valueOf(b.getText());
-                          break;
-                      case "/":
-                          r= Double.valueOf(a.getText())/Double.valueOf(b.getText());
-                          break;
-                  }
-
+                   Double r= cIcal.cal(f.getSelectedItem().toString(),Double.parseDouble(a.getText()), Double.parseDouble(b.getText()));
                    label.setText(r.toString());
+                   if(getCalFinish()!=null)
+                   calFinish.done(r,BFrame.this);
                }
                catch (Exception ex)
                {
